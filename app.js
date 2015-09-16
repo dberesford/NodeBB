@@ -32,7 +32,9 @@ var fs = require('fs'),
 	colors = require('colors'),
 	path = require('path'),
 	pkg = require('./package.json'),
-	utils = require('./public/src/utils.js');
+	utils = require('./public/src/utils.js'),
+	meta = require('./src/meta'),
+	emitter = require('./src/emitter');
 
 global.env = process.env.NODE_ENV || 'production';
 
@@ -143,8 +145,6 @@ function start() {
 		if (typeof message !== 'object') {
 			return;
 		}
-		var meta = require('./src/meta');
-		var emitter = require('./src/emitter');
 		switch (message.action) {
 			case 'reload':
 				meta.reload();
@@ -171,7 +171,7 @@ function start() {
 		winston.error(err.stack);
 		console.log(err.stack);
 
-		require('./src/meta').js.killMinifier();
+		meta.js.killMinifier();
 		shutdown(1);
 	});
 
@@ -179,10 +179,10 @@ function start() {
 		async.apply(db.init),
 		async.apply(db.checkCompatibility),
 		function(next) {
-			require('./src/meta').configs.init(next);
+			meta.configs.init(next);
 		},
 		function(next) {
-			require('./src/meta').dependencies.check(next);
+			meta.dependencies.check(next);
 		},
 		function(next) {
 			require('./src/upgrade').check(next);
@@ -274,7 +274,7 @@ function upgrade() {
 			winston.error(err.stack);
 			process.exit();
 		}
-		require('./src/meta').configs.init(function () {
+		meta.configs.init(function () {
 			require('./src/upgrade').upgrade();
 		});
 	});
@@ -328,7 +328,6 @@ function reset() {
 }
 
 function resetSettings(callback) {
-	var meta = require('./src/meta');
 	meta.configs.set('allowLocalLogin', 1, function(err) {
 		winston.info('[reset] Settings reset to default');
 		if (typeof callback === 'function') {
@@ -340,8 +339,6 @@ function resetSettings(callback) {
 }
 
 function resetThemes(callback) {
-	var meta = require('./src/meta');
-
 	meta.themes.set({
 		type: 'local',
 		id: 'nodebb-theme-persona'
